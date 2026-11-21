@@ -484,3 +484,28 @@ export async function downloadExcelTemplate(_req: Request, res: Response): Promi
   res.setHeader('Content-Disposition', 'attachment; filename="certiflow_candidates_template.xlsx"');
   res.send(buffer);
 }
+
+export async function downloadSampleFile(req: Request, res: Response): Promise<void> {
+  const { type } = req.params; // 'valid', 'large', 'errors'
+  const pathModule = await import('path');
+  const fsModule = await import('fs');
+
+  let filename = 'sample_valid_candidates.xlsx';
+  if (type === 'large') {
+    filename = 'sample_large_cohort_55.xlsx';
+  } else if (type === 'errors') {
+    filename = 'sample_with_validation_errors.xlsx';
+  }
+
+  const filePath = pathModule.resolve(__dirname, '../../../../sample_data', filename);
+
+  if (!fsModule.existsSync(filePath)) {
+    res.status(404).json({ error: 'Sample file not found.' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  const stream = fsModule.createReadStream(filePath);
+  stream.pipe(res);
+}

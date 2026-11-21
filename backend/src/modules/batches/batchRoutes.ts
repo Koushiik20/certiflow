@@ -8,7 +8,8 @@ import {
   submitBatch,
   returnBatch,
   resubmitBatch,
-  downloadExcelTemplate
+  downloadExcelTemplate,
+  downloadSampleFile
 } from './batchController';
 import { authenticateJWT } from '../../middleware/auth';
 import { requireRole } from '../../middleware/roleCheck';
@@ -23,6 +24,7 @@ const router = Router();
 router.use(authenticateJWT);
 
 router.get('/template', downloadExcelTemplate);
+router.get('/samples/:type', downloadSampleFile);
 router.post('/', requireRole('TRAINING_CENTRE', 'ADMIN'), createBatch);
 router.get('/', getBatches);
 router.get('/:id', getBatchById);

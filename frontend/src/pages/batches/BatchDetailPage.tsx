@@ -494,19 +494,43 @@ export const BatchDetailPage: React.FC = () => {
       {/* TAB 2: Upload Spreadsheet */}
       {activeTab === 'upload' && (
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
             <div>
               <h2 className="text-sm font-bold text-slate-900">Upload Spreadsheet (.xlsx, .csv)</h2>
               <p className="text-xs text-slate-500">Atomic validation: zero partial records saved on errors.</p>
             </div>
-            <a
-              href="/api/batches/template"
-              download
-              className="text-xs font-semibold text-blue-600 hover:underline flex items-center space-x-1"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download Template</span>
-            </a>
+            
+            {/* Quick Sample Downloads */}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-[11px] text-slate-400 font-medium">Test Samples:</span>
+              <a
+                href="/api/batches/samples/valid"
+                download
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-medium flex items-center space-x-1"
+                title="Download 10 valid passing candidates"
+              >
+                <Download className="w-3 h-3 text-blue-600" />
+                <span>Valid (10)</span>
+              </a>
+              <a
+                href="/api/batches/samples/large"
+                download
+                className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium flex items-center space-x-1"
+                title="Download 55 candidates (triggers Quality Team review)"
+              >
+                <Download className="w-3 h-3 text-purple-600" />
+                <span>Large (55)</span>
+              </a>
+              <a
+                href="/api/batches/samples/errors"
+                download
+                className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-medium flex items-center space-x-1"
+                title="Download sample with phone, score & date errors"
+              >
+                <Download className="w-3 h-3 text-rose-600" />
+                <span>With Errors</span>
+              </a>
+            </div>
           </div>
 
           <form onSubmit={handleFileUpload} className="space-y-3">
