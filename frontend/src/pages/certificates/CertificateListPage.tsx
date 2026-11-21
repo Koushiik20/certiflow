@@ -105,7 +105,19 @@ export const CertificateListPage: React.FC = () => {
         {loading ? (
           <div className="py-20 text-center text-slate-400">Loading certificates...</div>
         ) : filteredCerts.length === 0 ? (
-          <div className="py-20 text-center text-slate-400 font-medium">No certificates found.</div>
+          <div className="py-20 text-center text-slate-500 space-y-2">
+            <Award className="w-12 h-12 text-slate-300 mx-auto" />
+            <p className="font-bold text-sm text-slate-700">No Certificates Issued Yet</p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Certificates are generated and updated only after the State Officer (Farah) grants final approval on a batch.
+            </p>
+            <Link
+              to="/batches"
+              className="inline-block mt-3 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 transition"
+            >
+              Go to Batches to Review & Issue
+            </Link>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">

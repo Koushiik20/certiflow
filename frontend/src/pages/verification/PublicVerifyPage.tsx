@@ -172,30 +172,10 @@ export const PublicVerifyPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Demo Pre-fill links */}
+          {/* Verification Tip */}
           <div className="mt-3 flex items-center space-x-2 text-[11px] text-slate-500">
-            <span className="font-semibold">Quick Test IDs:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setInputCertId('CERT-2026-800001');
-                navigate('/verify/CERT-2026-800001');
-              }}
-              className="font-mono text-blue-700 hover:underline font-bold"
-            >
-              CERT-2026-800001 (Valid)
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => {
-                setInputCertId('CERT-2026-000099');
-                navigate('/verify/CERT-2026-000099');
-              }}
-              className="font-mono text-rose-700 hover:underline font-bold"
-            >
-              CERT-2026-000099 (Revoked)
-            </button>
+            <span className="font-semibold">Tip:</span>
+            <span>Enter any Certificate ID issued by the State Directorate, or scan a certificate QR code.</span>
           </div>
 
           {/* Proactive PDF Tamper Inspector Dropzone */}

@@ -56,9 +56,14 @@ export async function processBatchCertificateGeneration(batchId: string): Promis
       continue;
     }
 
-    // Format unique sequential certificate number
+    // Format unique sequential certificate number (collision-safe)
     const count = await prisma.certificate.count();
-    const certificateNumber = `CERT-${year}-${String(count + 1).padStart(6, '0')}`;
+    let seq = count + 1;
+    let certificateNumber = `CERT-${year}-${String(seq).padStart(6, '0')}`;
+    while (await prisma.certificate.findUnique({ where: { certificateNumber } })) {
+      seq++;
+      certificateNumber = `CERT-${year}-${String(seq).padStart(6, '0')}`;
+    }
     const publicVerificationUrl = `${config.publicBaseUrl}/verify/${certificateNumber}`;
     const outputFilename = `${certificateNumber}.pdf`;
     const outputFilePath = path.join(config.storageDir, 'certificates', outputFilename);

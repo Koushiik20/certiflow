@@ -271,7 +271,48 @@ describe('CertiFlow Master Test Suite — Critical Workflow Invariants', { timeo
   // TEST 6: Certificate revocation & Public verification reflects CANCELLED
   // =========================================================================
   it('Test 6: Revoked certificate cannot be shown as valid on public verification', async () => {
-    const verifyRes = await request(app).get('/api/verify/CERT-2026-000099');
+    const cand = await prisma.candidate.create({
+      data: {
+        candidateIdentifier: `CAND-REV-${Date.now()}`,
+        fullName: 'Test Revoke Candidate',
+        phone: '9876543299'
+      }
+    });
+    const testBatch = await prisma.batch.create({
+      data: {
+        batchNumber: `BATCH-TEST-REVOKE-${Date.now()}`,
+        title: 'Revoke Test Cohort',
+        courseName: 'Test Course',
+        courseCode: 'TST-101',
+        trainingCentreId: tcId,
+        districtId: districtId,
+        startDate: new Date(),
+        completionDate: new Date(),
+        candidateCount: 1,
+        status: 'ISSUED',
+        currentRevision: 1
+      }
+    });
+    const certNum = `CERT-REVOKE-${Date.now()}`;
+    await prisma.certificate.create({
+      data: {
+        certificateNumber: certNum,
+        batchId: testBatch.id,
+        candidateId: cand.id,
+        candidateNameSnapshot: cand.fullName,
+        courseNameSnapshot: testBatch.courseName,
+        trainingCentreSnapshot: 'Test TC',
+        completionDate: new Date(),
+        issueDate: new Date(),
+        status: 'CANCELLED',
+        cancellationReason: 'State Vigilance Inquiry: Fraudulent record.',
+        certificateHash: 'hash-test',
+        pdfUrl: '/uploads/certificates/test.pdf',
+        qrCodeDataUrl: 'data:image/png;base64,demo'
+      }
+    });
+
+    const verifyRes = await request(app).get(`/api/verify/${certNum}`);
 
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.status).toBe('CANCELLED');
