@@ -58,15 +58,6 @@ app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/sla', slaRoutes);
 
-// Public Live Mission Control Pulse
-app.get('/api/events/pulse', (_req, res) => {
-  res.json({
-    events: eventBus.getRecentPulse(),
-    isRedisAvailable: eventBus.getRedisStatus(),
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Error Handler
 app.use(errorHandler);
 

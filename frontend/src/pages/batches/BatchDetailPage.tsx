@@ -277,11 +277,10 @@ export const BatchDetailPage: React.FC = () => {
 
           {/* Quick Action Button for the current role */}
           <div className="flex items-center space-x-2">
-            {user?.role === 'TRAINING_CENTRE' && batch.status === 'DRAFT' && (
+            {user?.role === 'TRAINING_CENTRE' && batch.status === 'DRAFT' && batch.candidateCount > 0 && (
               <button
                 onClick={handleSubmitBatch}
-                disabled={batch.candidateCount === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-sm transition flex items-center space-x-1.5 disabled:opacity-50"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-sm transition flex items-center space-x-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit for Approval</span>
@@ -378,7 +377,9 @@ export const BatchDetailPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1 border-t border-slate-100">
           <span>Centre: <strong className="text-slate-800">{batch.trainingCentre?.name}</strong></span>
           <span>District: <strong className="text-slate-800">{batch.district?.name}</strong></span>
-          <span>Candidates: <strong className="text-slate-800">{batch.candidateCount}</strong></span>
+          {batch.candidateCount > 0 && (
+            <span>Candidates: <strong className="text-slate-800">{batch.candidateCount}</strong></span>
+          )}
           <span>Dates: <strong className="text-slate-800">{new Date(batch.startDate).toLocaleDateString()} - {new Date(batch.completionDate).toLocaleDateString()}</strong></span>
         </div>
       </div>
@@ -393,7 +394,7 @@ export const BatchDetailPage: React.FC = () => {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Candidates ({batch.candidates?.length || 0})
+          Candidates {batch.candidateCount > 0 ? `(${batch.candidates?.length || batch.candidateCount})` : ''}
         </button>
 
         {user?.role === 'TRAINING_CENTRE' && ['DRAFT', 'RETURNED'].includes(batch.status) && (

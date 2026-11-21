@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import { MissionControlPulse } from '../../components/common/MissionControlPulse';
 import {
   CheckCircle2,
   XCircle,
@@ -450,9 +449,6 @@ export const PublicVerifyPage: React.FC = () => {
       <footer className="text-center py-4 text-xs text-slate-400 border-t bg-white">
         State Directorate of Vocational Education & Skilling • CertiFlow Trust Infrastructure 2026
       </footer>
-
-      {/* Live GovTech Telemetry */}
-      <MissionControlPulse />
     </div>
   );
 };

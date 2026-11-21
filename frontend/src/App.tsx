@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { DemoBanner } from './components/common/DemoBanner';
-import { MissionControlPulse } from './components/common/MissionControlPulse';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 
@@ -39,7 +38,6 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <Sidebar />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
-      <MissionControlPulse />
     </div>
   );
 };

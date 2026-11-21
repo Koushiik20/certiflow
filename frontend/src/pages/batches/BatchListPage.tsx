@@ -223,7 +223,11 @@ export const BatchListPage: React.FC = () => {
                     <div className="text-[10px] text-slate-400 font-mono">{b.courseCode}</div>
                   </td>
                   <td className="py-3 px-4 font-semibold text-slate-700">
-                    {b.candidateCount}
+                    {b.candidateCount > 0 ? (
+                      b.candidateCount
+                    ) : (
+                      <span className="text-slate-400 font-normal">—</span>
+                    )}
                   </td>
                   <td className="py-3 px-4 font-mono text-slate-500">
                     Rev {b.currentRevision}
