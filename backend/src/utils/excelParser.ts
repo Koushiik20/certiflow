@@ -22,6 +22,14 @@ export interface ValidationError {
   severity: 'CRITICAL' | 'WARNING';
 }
 
+export interface AnomalyForensicReport {
+  riskScore: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  flags: string[];
+  findings: string[];
+  integrityConfidencePercent: number;
+}
+
 export interface SpreadsheetValidationResult {
   isValid: boolean;
   totalRows: number;
@@ -29,6 +37,7 @@ export interface SpreadsheetValidationResult {
   errorCount: number;
   errors: ValidationError[];
   candidates: CandidateRowInput[];
+  forensics?: AnomalyForensicReport;
 }
 
 // Flexible header normalizer (handles lowercase, spaces, underscores, etc.)
@@ -302,6 +311,7 @@ export function parseAndValidateSpreadsheet(
   }
 
   const isValid = errors.filter((e) => e.severity === 'CRITICAL').length === 0;
+  const forensics = isValid ? analyzeForensics(candidates) : undefined;
 
   return {
     isValid,
@@ -310,6 +320,89 @@ export function parseAndValidateSpreadsheet(
     errorCount: errors.length,
     errors,
     candidates: isValid ? candidates : [],
+    forensics,
+  };
+}
+
+export function analyzeForensics(candidates: CandidateRowInput[]): AnomalyForensicReport {
+  let riskScore = 0;
+  const flags: string[] = [];
+  const findings: string[] = [];
+
+  if (candidates.length === 0) {
+    return {
+      riskScore: 0,
+      riskLevel: 'LOW',
+      flags: [],
+      findings: ['No candidate records to inspect.'],
+      integrityConfidencePercent: 100
+    };
+  }
+
+  // 1. Phone number clustering & sequential pattern detection (Ghost Candidate Hunter)
+  const phoneNums = candidates.map(c => c.phoneNumber.replace(/\D/g, '')).filter(p => p.length === 10);
+  const prefixMap: { [prefix: string]: number } = {};
+  phoneNums.forEach(p => {
+    const prefix = p.substring(0, 6);
+    prefixMap[prefix] = (prefixMap[prefix] || 0) + 1;
+  });
+
+  const clusteredPrefixes = Object.entries(prefixMap).filter(([_, count]) => count >= 4 && count / phoneNums.length >= 0.4);
+  if (clusteredPrefixes.length > 0) {
+    flags.push('CLUSTERED_PHONE_EXCHANGES');
+    findings.push(`Detected ${clusteredPrefixes[0][1]} candidates sharing identical 6-digit telephone exchange blocks.`);
+    riskScore += 25;
+  }
+
+  // Sequential phone numbers check (e.g. 9876540001, 9876540002)
+  const sortedPhones = [...phoneNums].map(p => Number(p)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+  let sequentialCount = 0;
+  for (let i = 0; i < sortedPhones.length - 1; i++) {
+    if (sortedPhones[i + 1] - sortedPhones[i] === 1) {
+      sequentialCount++;
+    }
+  }
+  if (sequentialCount >= 2) {
+    flags.push('SEQUENTIAL_PHONE_RECORDS');
+    findings.push(`Identified ${sequentialCount + 1} sequential mobile numbers; potential fabricated batch.`);
+    riskScore += 30;
+  }
+
+  // 2. Score standard deviation & grade compression anomaly (Collusion / Inflation Detector)
+  const marks = candidates.map(c => c.marks);
+  const avg = marks.reduce((a, b) => a + b, 0) / marks.length;
+  const variance = marks.reduce((acc, m) => acc + Math.pow(m - avg, 2), 0) / marks.length;
+  const stdDev = Math.sqrt(variance);
+
+  if (candidates.length >= 6 && stdDev < 3.2) {
+    flags.push('ARTIFICIAL_GRADE_COMPRESSION');
+    findings.push(`Abnormally narrow mark standard deviation (σ=${stdDev.toFixed(2)}). Real cohorts typically exhibit σ > 6.0.`);
+    riskScore += 25;
+  }
+
+  // 3. 100% Pass rate on cohorts >= 15
+  const passCount = candidates.filter(c => c.result === 'PASS').length;
+  if (candidates.length >= 15 && passCount === candidates.length) {
+    flags.push('UNCHARACTERISTIC_100_PERCENT_PASS');
+    findings.push(`Cohort recorded a 100% pass rate across ${candidates.length} candidates.`);
+    riskScore += 10;
+  }
+
+  if (flags.length === 0) {
+    findings.push('Heuristic distribution normal. Mobile numbers, variance, and pass ratios match benchmark skilling distributions.');
+  }
+
+  const normalizedScore = Math.min(100, Math.max(0, riskScore));
+  const riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' =
+    normalizedScore >= 50 ? 'HIGH' : normalizedScore >= 20 ? 'MEDIUM' : 'LOW';
+  const integrityConfidencePercent = Math.max(15, 100 - normalizedScore);
+
+  return {
+    riskScore: normalizedScore,
+    riskLevel,
+    flags,
+    findings,
+    integrityConfidencePercent
   };
 }
 

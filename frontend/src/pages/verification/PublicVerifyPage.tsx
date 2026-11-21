@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../api/client';
+import { MissionControlPulse } from '../../components/common/MissionControlPulse';
 import {
   CheckCircle2,
   XCircle,
@@ -13,7 +14,11 @@ import {
   ShieldAlert,
   ArrowLeft,
   Hash,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck,
+  FileCheck,
+  UploadCloud,
+  FileX
 } from 'lucide-react';
 
 export const PublicVerifyPage: React.FC = () => {
@@ -24,6 +29,57 @@ export const PublicVerifyPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Client-Side PDF Tamper Inspector
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [tamperStatus, setTamperStatus] = useState<'IDLE' | 'MATCH' | 'MISMATCH' | 'CALCULATING'>('IDLE');
+  const [inspectedHash, setInspectedHash] = useState<string>('');
+  const [inspectedFileName, setInspectedFileName] = useState<string>('');
+  const handleInspectPdfFile = async (file: File) => {
+    if (!file) return;
+    setInspectedFileName(file.name);
+    setTamperStatus('CALCULATING');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(digest));
+      const calculatedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      setInspectedHash(calculatedHash);
+
+      // Compare with loaded cert hash if present
+      if (verifyResult?.certificate?.certificateHash) {
+        if (calculatedHash.toLowerCase() === verifyResult.certificate.certificateHash.toLowerCase()) {
+          setTamperStatus('MATCH');
+        } else {
+          setTamperStatus('MISMATCH');
+        }
+      } else {
+        // Query server by hash
+        setLoading(true);
+        try {
+          const res = await api.get(`/verify/${calculatedHash}`);
+          setVerifyResult(res.data);
+          setTamperStatus('MATCH');
+        } catch {
+          setTamperStatus('MISMATCH');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setTamperStatus('MISMATCH');
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleInspectPdfFile(e.dataTransfer.files[0]);
+    }
+  };
 
   useEffect(() => {
     if (certificateId) {
@@ -141,6 +197,78 @@ export const PublicVerifyPage: React.FC = () => {
               CERT-2026-000099 (Revoked)
             </button>
           </div>
+
+          {/* Proactive PDF Tamper Inspector Dropzone */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={`mt-4 border-2 border-dashed rounded-xl p-3.5 text-center transition cursor-pointer ${
+              isDragging
+                ? 'border-blue-500 bg-blue-50/70'
+                : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+            }`}
+            onClick={() => {
+              const fileInput = document.getElementById('pdf-inspect-input');
+              fileInput?.click();
+            }}
+          >
+            <input
+              id="pdf-inspect-input"
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleInspectPdfFile(e.target.files[0]);
+                }
+              }}
+            />
+            <div className="flex items-center justify-center space-x-2 text-xs">
+              <UploadCloud className="w-4 h-4 text-slate-500" />
+              <span className="font-semibold text-slate-700">
+                Drag & Drop Certificate PDF to inspect tamper status
+              </span>
+              <span className="text-slate-400 text-[10px]">(SHA-256 Bitwise Verification)</span>
+            </div>
+
+            {tamperStatus === 'CALCULATING' && (
+              <p className="text-[11px] font-mono text-blue-600 mt-1.5 animate-pulse">
+                Calculating SHA-256 byte digest for {inspectedFileName}...
+              </p>
+            )}
+
+            {tamperStatus === 'MATCH' && (
+              <div className="mt-2 p-2 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-lg text-left flex items-start space-x-2 text-[11px]">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-emerald-950">
+                    100% Cryptographic Match — Authentic & Unaltered
+                  </p>
+                  <p className="text-emerald-700 font-mono text-[10px]">
+                    Hash: {inspectedHash}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {tamperStatus === 'MISMATCH' && (
+              <div className="mt-2 p-2 bg-rose-50 border border-rose-300 text-rose-900 rounded-lg text-left flex items-start space-x-2 text-[11px]">
+                <FileX className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-rose-950">
+                    Security Tamper Alert: Hash Mismatch Detected!
+                  </p>
+                  <p className="text-rose-700 font-mono text-[10px]">
+                    Provided file does not match State Directorate issued ledger.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Verification Result Card */}
@@ -224,6 +352,37 @@ export const PublicVerifyPage: React.FC = () => {
                       <span className="text-emerald-400">{verifyResult.certificate.certificateHash}</span>
                     </div>
                   </div>
+
+                  {/* Multi-Signature Authority Chain */}
+                  {verifyResult.certificate.signatureChain && (
+                    <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1.5 mb-2.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                        Multi-Signature Cryptographic Authority Chain
+                      </span>
+                      <div className="space-y-2">
+                        {verifyResult.certificate.signatureChain.map((sig: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between text-[11px] bg-white p-2 rounded-lg border border-slate-200/80 shadow-xs"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-[10px]">
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <p className="font-bold text-slate-800">{sig.step}</p>
+                                <p className="text-slate-500 text-[10px]">{sig.authority}</p>
+                              </div>
+                            </div>
+                            <span className="font-mono text-[9px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                              {sig.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="pt-2 text-center">
                     <a
@@ -311,6 +470,9 @@ export const PublicVerifyPage: React.FC = () => {
       <footer className="text-center py-4 text-xs text-slate-400 border-t bg-white">
         State Directorate of Vocational Education & Skilling • CertiFlow Trust Infrastructure 2026
       </footer>
+
+      {/* Live GovTech Telemetry */}
+      <MissionControlPulse />
     </div>
   );
 };

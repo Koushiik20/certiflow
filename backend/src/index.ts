@@ -6,6 +6,7 @@ import { config } from './config';
 import { connectDB } from './db';
 import { errorHandler } from './middleware/errorHandler';
 import { startWorkers } from './workers';
+import { eventBus } from './events/eventBus';
 
 // Route Handlers
 import authRoutes from './modules/auth/authRoutes';
@@ -56,6 +57,15 @@ app.use('/api/verify', verificationRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/sla', slaRoutes);
+
+// Public Live Mission Control Pulse
+app.get('/api/events/pulse', (_req, res) => {
+  res.json({
+    events: eventBus.getRecentPulse(),
+    isRedisAvailable: eventBus.getRedisStatus(),
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Error Handler
 app.use(errorHandler);

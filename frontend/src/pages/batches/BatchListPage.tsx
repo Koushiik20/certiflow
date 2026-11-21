@@ -4,7 +4,7 @@ import { Batch } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Link } from 'react-router-dom';
-import { Plus, Search, ArrowRight } from 'lucide-react';
+import { Plus, Search, ArrowRight, Sparkles, ShieldCheck, AlertCircle, Clock, Zap, CheckCircle2 } from 'lucide-react';
 
 export const BatchListPage: React.FC = () => {
   const { user } = useAuth();
@@ -96,6 +96,71 @@ export const BatchListPage: React.FC = () => {
             <span>New Batch</span>
           </button>
         )}
+      </div>
+
+      {/* Proactive AI Morning Dispatch & Triage */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-4 text-white shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <Sparkles className="w-3 h-3 text-indigo-400" />
+                Proactive GovTech Dispatch
+              </span>
+              <span className="text-slate-400 text-xs">• Live Stage Triage</span>
+            </div>
+            <h3 className="text-sm font-bold text-slate-100">
+              {user?.role === 'DISTRICT_OFFICER' && (
+                <>Good morning, Officer {user?.name?.split(' ')[0]}. You have {batches.filter(b => b.status === 'DISTRICT_REVIEW').length} batches awaiting district scrutiny.</>
+              )}
+              {user?.role === 'STATE_OFFICE' && (
+                <>State Authorization Desk: {batches.filter(b => b.status === 'STATE_REVIEW').length} batch(es) cleared district scrutiny, ready for vector PDF issuance.</>
+              )}
+              {user?.role === 'QUALITY_TEAM' && (
+                <>Quality Assurance Audit: {batches.filter(b => b.status === 'QUALITY_REVIEW').length} cohort(s) exceeding 50 candidates awaiting statistical audit.</>
+              )}
+              {user?.role === 'TRAINING_CENTRE' && (
+                <>Centre Portal: {batches.filter(b => b.status === 'DRAFT').length} cohort in draft; {batches.filter(b => b.status === 'ISSUED').length} batches with issued credentials.</>
+              )}
+            </h3>
+            <p className="text-xs text-slate-300">
+              {user?.role === 'DISTRICT_OFFICER' && 'Two distinct officer sign-offs are enforced. Concurrency guards verify both signatures before state progression.'}
+              {user?.role === 'STATE_OFFICE' && 'Granting final approval triggers BullMQ worker to generate vector PDFs with dynamic QR stamps and SHA-256 hashes.'}
+              {user?.role === 'QUALITY_TEAM' && 'Automated threshold routing prevents unvetted large cohorts from state sign-off.'}
+              {user?.role === 'TRAINING_CENTRE' && 'Spreadsheet ingestion validates all records in memory—atomic rollback guarantees zero partial rows on errors.'}
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0">
+            {user?.role === 'DISTRICT_OFFICER' && (
+              <button
+                onClick={() => setStatusFilter('DISTRICT_REVIEW')}
+                className="text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5"
+              >
+                <span>Triage District Batches</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {user?.role === 'STATE_OFFICE' && (
+              <button
+                onClick={() => setStatusFilter('STATE_REVIEW')}
+                className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5"
+              >
+                <span>View Ready for Sign-Off</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {user?.role === 'QUALITY_TEAM' && (
+              <button
+                onClick={() => setStatusFilter('QUALITY_REVIEW')}
+                className="text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5"
+              >
+                <span>Inspect Flagged Cohorts</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Filter Bar */}

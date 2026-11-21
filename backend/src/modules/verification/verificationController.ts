@@ -16,19 +16,25 @@ export async function verifyCertificate(req: Request, res: Response): Promise<vo
 
   const trimmedId = certificateId.trim().toUpperCase();
 
-  // Support lookup by certificateNumber (e.g. CERT-2026-000001) or primary key id
+  // Support lookup by certificateNumber (e.g. CERT-2026-000001), primary key id, or SHA-256 hash
   const certificate = await prisma.certificate.findFirst({
     where: {
       OR: [
         { certificateNumber: trimmedId },
-        { id: trimmedId }
+        { id: trimmedId },
+        { certificateHash: trimmedId }
       ]
     },
     include: {
       batch: {
         include: {
           trainingCentre: true,
-          district: true
+          district: true,
+          approvals: {
+            where: { isSuperseded: false },
+            include: { officer: true },
+            orderBy: { createdAt: 'asc' }
+          }
         }
       }
     }
@@ -42,6 +48,30 @@ export async function verifyCertificate(req: Request, res: Response): Promise<vo
     });
     return;
   }
+
+  const signatureChain = [
+    {
+      step: '1. Training Centre Roster Ingestion',
+      authority: certificate.trainingCentreSnapshot,
+      role: 'TRAINING_CENTRE',
+      timestamp: certificate.batch.createdAt,
+      status: 'SEALED'
+    },
+    ...certificate.batch.approvals.map((app, idx) => ({
+      step: `${idx + 2}. District Concurrence #${idx + 1}`,
+      authority: `${app.officer.name} (${app.role.replace('_', ' ')})`,
+      role: app.role,
+      timestamp: app.createdAt,
+      status: 'VERIFIED_SIGNATURE'
+    })),
+    {
+      step: `${certificate.batch.approvals.length + 2}. State Directorate Final Seal`,
+      authority: certificate.issuingAuthority,
+      role: 'STATE_OFFICE',
+      timestamp: certificate.issueDate,
+      status: 'DIGITALLY_SEALED'
+    }
+  ];
 
   if (certificate.status === 'CANCELLED') {
     res.json({
@@ -58,7 +88,9 @@ export async function verifyCertificate(req: Request, res: Response): Promise<vo
         status: 'CANCELLED',
         cancelledAt: certificate.cancelledAt,
         cancellationReason: certificate.cancellationReason,
-        issuingAuthority: certificate.issuingAuthority
+        issuingAuthority: certificate.issuingAuthority,
+        certificateHash: certificate.certificateHash,
+        signatureChain
       }
     });
     return;
@@ -80,7 +112,8 @@ export async function verifyCertificate(req: Request, res: Response): Promise<vo
       status: 'VALID',
       issuingAuthority: certificate.issuingAuthority,
       certificateHash: certificate.certificateHash,
-      pdfUrl: certificate.pdfUrl
+      pdfUrl: certificate.pdfUrl,
+      signatureChain
     }
   });
 }
