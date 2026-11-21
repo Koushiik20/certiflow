@@ -1,0 +1,266 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  TRAINING_CENTRE
+  DISTRICT_OFFICER
+  QUALITY_TEAM
+  STATE_OFFICE
+  CANDIDATE
+  ADMIN
+}
+
+enum BatchStatus {
+  DRAFT
+  SUBMITTED
+  DISTRICT_REVIEW
+  QUALITY_REVIEW
+  STATE_REVIEW
+  APPROVED
+  ISSUING
+  ISSUED
+  RETURNED
+  REJECTED
+  CANCELLED
+}
+
+enum CandidateStatus {
+  PENDING
+  VALIDATED
+  FLAGGED
+  APPROVED
+  FAILED
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+  RETURNED
+}
+
+enum CertificateStatus {
+  VALID
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  FAILED
+  RETRYING
+}
+
+enum FailureType {
+  NONE
+  TEMPORARY
+  TIMEOUT
+  PERMANENT
+  RANDOM
+}
+
+model User {
+  id               String          @id @default(uuid())
+  email            String          @unique
+  passwordHash     String
+  name             String
+  role             String
+  districtId       String?
+  district         District?       @relation(fields: [districtId], references: [id])
+  trainingCentreId String?
+  trainingCentre   TrainingCentre? @relation(fields: [trainingCentreId], references: [id])
+  approvals        Approval[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([role])
+  @@index([districtId])
+}
+
+model District {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  code            String           @unique
+  state           String           @default("State Directorate")
+  users           User[]
+  trainingCentres TrainingCentre[]
+  batches         Batch[]
+  createdAt       DateTime         @default(now())
+}
+
+model TrainingCentre {
+  id           String    @id @default(uuid())
+  name         String
+  code         String    @unique
+  districtId   String
+  district     District  @relation(fields: [districtId], references: [id])
+  address      String?
+  contactEmail String
+  contactPhone String
+  active       Boolean   @default(true)
+  users        User[]
+  batches      Batch[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Batch {
+  id                String           @id @default(uuid())
+  batchNumber       String           @unique
+  title             String
+  courseName        String
+  courseCode        String
+  trainingCentreId  String
+  trainingCentre    TrainingCentre   @relation(fields: [trainingCentreId], references: [id])
+  districtId        String
+  district          District         @relation(fields: [districtId], references: [id])
+  startDate         DateTime
+  completionDate    DateTime
+  candidateCount    Int              @default(0)
+  status            String           @default("DRAFT")
+  currentRevision   Int              @default(1)
+  slaStageEnteredAt DateTime         @default(now())
+  isOverdue         Boolean          @default(false)
+  rejectionReason   String?
+  returnReason      String?
+  candidates        BatchCandidate[]
+  approvals         Approval[]
+  certificates      Certificate[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status])
+  @@index([districtId])
+  @@index([trainingCentreId])
+  @@index([isOverdue])
+}
+
+model Candidate {
+  id                  String           @id @default(uuid())
+  candidateIdentifier String           @unique
+  fullName            String
+  phone               String
+  email               String?
+  batchCandidates     BatchCandidate[]
+  certificates        Certificate[]
+  deliveryJobs        DeliveryJob[]
+  createdAt           DateTime         @default(now())
+
+  @@index([phone])
+}
+
+model BatchCandidate {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  marks        Float
+  result       String
+  status       String    @default("VALIDATED")
+  flagReason   String?
+  rawRowNumber Int?
+  createdAt    DateTime  @default(now())
+
+  @@unique([batchId, candidateId])
+  @@index([batchId])
+}
+
+model Approval {
+  id           String   @id @default(uuid())
+  batchId      String
+  batch        Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  revision     Int
+  officerId    String
+  officer      User     @relation(fields: [officerId], references: [id])
+  role         String
+  decision     String
+  comments     String?
+  isSuperseded Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@unique([batchId, revision, officerId])
+  @@index([batchId, revision])
+}
+
+model Certificate {
+  id                     String        @id @default(uuid())
+  certificateNumber      String        @unique
+  batchId                String
+  batch                  Batch         @relation(fields: [batchId], references: [id])
+  candidateId            String
+  candidate              Candidate     @relation(fields: [candidateId], references: [id])
+  candidateNameSnapshot  String
+  courseNameSnapshot     String
+  trainingCentreSnapshot String
+  completionDate         DateTime
+  issueDate              DateTime      @default(now())
+  issuingAuthority       String        @default("State Skilling Directorate")
+  certificateHash        String
+  pdfUrl                 String
+  qrCodeDataUrl          String
+  status                 String        @default("VALID")
+  cancellationReason     String?
+  cancelledAt            DateTime?
+  cancelledByUserId      String?
+  deliveryJobs           DeliveryJob[]
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([certificateNumber])
+  @@index([status])
+  @@index([batchId])
+}
+
+model DeliveryJob {
+  id            String    @id @default(uuid())
+  certificateId String
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id])
+  phone         String
+  status        String    @default("PENDING")
+  attemptCount  Int       @default(0)
+  maxAttempts   Int       @default(4)
+  nextRetryAt   DateTime?
+  lastError     String?
+  failureType   String    @default("NONE")
+  deliveredAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
+  @@index([certificateId])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  userRole      String?
+  action        String
+  entityType    String
+  entityId      String
+  previousState String?
+  newState      String?
+  ipAddress     String?
+  metadata      String?
+  timestamp     DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@index([userId])
+}
+
+model SlaConfig {
+  id               String  @id @default(uuid())
+  stage            String  @unique
+  maxDurationHours Int
+  escalationRole   String
+  active           Boolean @default(true)
+}
