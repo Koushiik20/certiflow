@@ -504,8 +504,8 @@ export const BatchDetailPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <span className="text-[11px] text-slate-400 font-medium">Test Samples:</span>
               <a
-                href="/api/batches/samples/valid"
-                download
+                href="/samples/sample_valid_candidates.xlsx"
+                download="sample_valid_candidates.xlsx"
                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded font-medium flex items-center space-x-1"
                 title="Download 10 valid passing candidates"
               >
@@ -513,8 +513,8 @@ export const BatchDetailPage: React.FC = () => {
                 <span>Valid (10)</span>
               </a>
               <a
-                href="/api/batches/samples/large"
-                download
+                href="/samples/sample_large_cohort_55.xlsx"
+                download="sample_large_cohort_55.xlsx"
                 className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium flex items-center space-x-1"
                 title="Download 55 candidates (triggers Quality Team review)"
               >
@@ -522,8 +522,8 @@ export const BatchDetailPage: React.FC = () => {
                 <span>Large (55)</span>
               </a>
               <a
-                href="/api/batches/samples/errors"
-                download
+                href="/samples/sample_with_validation_errors.xlsx"
+                download="sample_with_validation_errors.xlsx"
                 className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-medium flex items-center space-x-1"
                 title="Download sample with phone, score & date errors"
               >
