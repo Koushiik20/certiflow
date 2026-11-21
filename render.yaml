@@ -1,0 +1,51 @@
+services:
+  # 1. CertiFlow Backend API Service
+  - type: web
+    name: certiflow-backend
+    env: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install && cp prisma/schema.postgresql.prisma prisma/schema.prisma && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npx ts-node prisma/seed.ts && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: certiflow-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: "true"
+      - key: STORAGE_DIR
+        value: /tmp/uploads
+
+  # 2. CertiFlow Frontend Static Application
+  - type: web
+    name: certiflow-frontend
+    env: static
+    plan: free
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: certiflow-backend
+          type: web
+          property: host
+
+databases:
+  # 3. Managed PostgreSQL Database
+  - name: certiflow-db
+    plan: free
+    region: oregon
+    databaseName: certiflow
+    user: certiflow_admin

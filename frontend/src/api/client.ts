@@ -1,8 +1,13 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
+
+export const getApiBaseUrl = (): string => {
+  const url = import.meta.env.VITE_API_URL || '';
+  return url.endsWith('/api') ? url.slice(0, -4) : url;
+};
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('certiflow_token');

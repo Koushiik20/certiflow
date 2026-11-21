@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../api/client';
 import {
   CheckCircle2,
   XCircle,
@@ -39,7 +39,7 @@ export const PublicVerifyPage: React.FC = () => {
     setVerifyResult(null);
 
     try {
-      const res = await axios.get(`/api/verify/${certId.trim()}`);
+      const res = await api.get(`/verify/${certId.trim()}`);
       setVerifyResult(res.data);
     } catch (err: any) {
       if (err.response?.data) {
