@@ -245,3 +245,4 @@ console.log(' - sample_valid_candidates.xlsx (10 valid candidates)');
 console.log(' - sample_valid_candidates.csv (CSV format)');
 console.log(' - sample_large_cohort_55.xlsx (55 candidates to trigger Quality Review)');
 console.log(' - sample_with_validation_errors.xlsx (Errors: invalid phone, negative marks, pass discrepancy, duplicates)');
+

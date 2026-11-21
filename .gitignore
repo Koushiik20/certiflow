@@ -4,8 +4,9 @@ build/
 .env
 *.db
 *.db-journal
-uploads/certificates/*.pdf
-uploads/certificates/*.png
+uploads/
+**/uploads/certificates/*.pdf
+**/uploads/certificates/*.png
 .DS_Store
 Thumbs.db
 *.log
