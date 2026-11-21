@@ -10,6 +10,7 @@ RUN npm ci
 
 COPY src ./src
 
+# If PostgreSQL schema is needed in build, support both
 RUN npx prisma generate
 RUN npm run build
 
@@ -25,12 +26,11 @@ COPY prisma ./prisma/
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 RUN mkdir -p /app/uploads/certificates
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+# Auto-detect database provider based on DATABASE_URL
+CMD ["sh", "-c", "if echo \"$DATABASE_URL\" | grep -q '^postgres'; then cp prisma/schema.postgresql.prisma prisma/schema.prisma && npx prisma generate; fi && npx prisma db push && npx ts-node prisma/seed.ts && node dist/index.js"]
 
