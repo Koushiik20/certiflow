@@ -26,7 +26,6 @@ export const BatchDetailPage: React.FC = () => {
   const { user } = useAuth();
 
   const [batch, setBatch] = useState<Batch | null>(null);
-  const [forensics, setForensics] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'candidates' | 'history' | 'upload'>('candidates');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -53,7 +52,6 @@ export const BatchDetailPage: React.FC = () => {
     try {
       const res = await api.get(`/batches/${id}`);
       setBatch(res.data.batch);
-      setForensics(res.data.forensics);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.error || 'Failed to load batch.');
     } finally {
@@ -384,41 +382,6 @@ export const BatchDetailPage: React.FC = () => {
           <span>Dates: <strong className="text-slate-800">{new Date(batch.startDate).toLocaleDateString()} - {new Date(batch.completionDate).toLocaleDateString()}</strong></span>
         </div>
       </div>
-
-      {/* Autonomous AI Fraud & Anomaly Sentinel */}
-      {forensics && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <ShieldCheck className="w-4 h-4 text-blue-600" />
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                AI Fraud & Anomaly Sentinel
-              </h3>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                forensics.riskLevel === 'HIGH'
-                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                  : forensics.riskLevel === 'MEDIUM'
-                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                  : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-              }`}>
-                Risk Level: {forensics.riskLevel} (Score: {forensics.riskScore}/100)
-              </span>
-            </div>
-            <div className="text-[11px] font-mono text-slate-500">
-              Integrity Confidence: <strong className="text-emerald-700">{forensics.integrityConfidencePercent}%</strong>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-200/80 text-[11px] space-y-1">
-            {forensics.findings?.map((finding: string, idx: number) => (
-              <div key={idx} className="flex items-start space-x-1.5 text-slate-700">
-                <span className="text-slate-400 mt-0.5">•</span>
-                <span>{finding}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="flex space-x-1 border-b border-slate-200 text-xs font-medium">

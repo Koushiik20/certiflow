@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../db';
-import { parseAndValidateSpreadsheet, generateSampleExcelBuffer, analyzeForensics } from '../../utils/excelParser';
+import { parseAndValidateSpreadsheet, generateSampleExcelBuffer } from '../../utils/excelParser';
 import { recordAuditLog } from '../audit/auditService';
 import { eventBus } from '../../events/eventBus';
 
@@ -165,23 +165,7 @@ export async function getBatchById(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Calculate real-time anomaly forensics for this batch's candidates
-  const candidateInputs = batch.candidates.map((bc, idx) => ({
-    rowNumber: idx + 1,
-    candidateName: bc.candidate.fullName,
-    phoneNumber: bc.candidate.phone,
-    email: bc.candidate.email || undefined,
-    courseName: batch.courseName,
-    courseCode: batch.courseCode,
-    marks: bc.marks,
-    result: bc.result as 'PASS' | 'FAIL',
-    startDate: batch.startDate,
-    completionDate: batch.completionDate,
-  }));
-
-  const forensics = analyzeForensics(candidateInputs);
-
-  res.json({ batch, forensics });
+  res.json({ batch });
 }
 
 export async function uploadSpreadsheet(req: Request, res: Response): Promise<void> {
